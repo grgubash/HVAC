@@ -7,7 +7,8 @@ import numpy as np
 def main():
 
     sensor1 = w1s()
-    sensor1.get_temperature()
+    current_temp = sensor1.get_temperature()
+    print(str(current_temp))
 
 if __name__ == "__main__":
 
