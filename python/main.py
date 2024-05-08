@@ -8,6 +8,7 @@ def main():
 
     sensor1 = w1s()
     current_temp = sensor1.get_temperature()
+    print("Current Temperature in Celsius:")
     print(str(current_temp))
 
 if __name__ == "__main__":
