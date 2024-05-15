@@ -31,7 +31,7 @@ def run():
         temp_data = sensor1.get_temperature()
 
         # Publish temperature data
-        socket.send(topic, temp_data)
+        socket.send_string(topic,(temp_data))
         time.sleep(1)
 
 if __name__ == "__main__":
