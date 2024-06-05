@@ -1,19 +1,22 @@
 # Water Coil Home Electronic Sensing (WATCHES): Glossary of Concepts
 
 ## The Terminal:
-Also known as the console. This is a text based interface to your computer. It's a black box.
+Also known as the console. This is a text based interface to your computer. It's a black box. The terminal has a prompt, which tells you some information about the current state of the terminal.
 
 
 ### Useful terminal commands
 
 #### pwd: print working directory
-Prints the path/address to the folder/directory that you are currently in
+Prints the path/address to the folder/directory that you are currently in. This should mirror the blue text you see in your "terminal prompt"
 
 #### ls: list
 List the contents of the folder/directory you are currently in. 
 
+#### tree
+Visualize the directory structure in the terminal
+
 #### cd: change directory
-Change from your current directory to a different directory. Note that "cd .." will move you UP one directory.
+Change from your current directory to a different directory. Note that "cd .." will move you UP one directory. type "cd" to get back your home directory.
 
 #### history
 See a print out of your terminal history, everything you have types in recently. 
