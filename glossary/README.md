@@ -3,7 +3,6 @@
 ## The Terminal:
 Also known as the console. This is a text based interface to your computer. It's a black box. The terminal has a prompt, which tells you some information about the current state of the terminal.
 
-
 ### Useful terminal commands
 
 #### pwd: print working directory
@@ -16,7 +15,9 @@ List the contents of the folder/directory you are currently in.
 Visualize the directory structure in the terminal
 
 #### cd: change directory
-Change from your current directory to a different directory. Note that "cd .." will move you UP one directory. type "cd" to get back your home directory.
+Change from your current directory to a different directory. Note that "cd .." will move you UP one directory. type "cd " to get back your home directory.
+
+The rule for using cd (or ANY command) is to type "cd" and then a SPACE and then the argument
 
 #### history
 See a print out of your terminal history, everything you have types in recently. 
@@ -33,6 +34,33 @@ OR use the following to open the text editor in the folder you are currently in:
 
 "geany ."
 
+## GIT
+Git is a tool used to manage and coordinate our code and other associated files. It is a command line tool with a few necessary commands. To ues git, you must cd into a folder that is a git directory. For this program, that means cd into ~/watches. folders are called "repositories" or "repos." 
+
+### git status
+show how many changed files you have. Changed is in relation to the remote repo
+
+### git pull
+Get changes from the remote folder/repo (hosted on a server somewhere) to your local machine
+
+### git add
+If you want to send changes you made locally, it is a 3 step process. The first is to type:
+
+"git add < filename >" 
+
+A shortcut to add all files is 
+
+"git add ."
+
+### git commit
+To push a change to the remote repository, you must add a note saying what you did. To do this:
+
+git commit -m "example message: fixed a bug, added a feature"
+
+### git push
+Once you have added and committed your changes, git push in order to send your local changes to the remote repository. At this point, someone else can git pull your changes.
+
+
 ## PYTHON
 A general purpose programming language. There are tons of programming languages, but this is the one we want to use. To the naked eye, a python program file looks just like any other text file. However the .py filetype tells the computer that it is a special file that can be executed by the Python interpreter.
 
@@ -43,6 +71,8 @@ The interpreter is simply language to describe the underlying mechanics of pytho
 To run a python program, first navigate (cd) to the folder containing the program in the terminal. Then:
 
 "python < filename.py >"
+
+To stop a running program: CTRL + C
 
 ## Basic Programming / Computer Architecture Concepts
 
@@ -76,4 +106,5 @@ To convert a character to a number, you would do
 dummyVariable = float(dummyVariable)
 
 Here, we have taken our old variable, dummyVariable, converted it to a number using float(), and then overwrote its old value. "Float" is short for "floating point", which means that the number can have decimal points. There are other datatypes besides floats (numbers) and characters, but we will not consider them here.
+
 
