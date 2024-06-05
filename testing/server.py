@@ -5,7 +5,7 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 
-# preallocate empty array and assign slice by chrisaycock
+# preallocate empty array and assign slice
 def update_temps(arr, num=1, fill_value=np.nan):
     """
     Update the temperature vector by shifting the numpy array and filling in the lost value
@@ -63,7 +63,7 @@ def run():
         topic, messagedata = message.split('::')
         
         # Convert the temperature reading from a string to an integer
-        currentTemp = int(messagedata)
+        currentTemp = float(messagedata)
 
         # Add our current temperature to our running array of temperatures
         temps = update_temps(temps,1,currentTemp)

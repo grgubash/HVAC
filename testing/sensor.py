@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from w1thermsensor import W1ThermSensor as w1s
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy import random as rnd
@@ -24,6 +25,9 @@ def run():
     # Specify how often to publish temperature data
     looptime = 1
 
+    # Create our sensor object with the 1W driver library
+    sensor1 = w1s()
+
     # Establish a ZMQ publishing socket
     port = "5556"
 
@@ -35,8 +39,8 @@ def run():
     # Enter forever loop
     while True:
 
-        # Get temperature reading (fake it)
-        temp_data = rnd.randint(20,40)
+        # Get temperature reading
+        temp_data = sensor1.get_temperature()
 
         # Construct a message string to send over ZMQ
         message = add_topic(topic, temp_data)
