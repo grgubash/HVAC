@@ -35,8 +35,11 @@ OR use the following to open the text editor in the folder you are currently in:
 
 ## PYTHON
 A general purpose programming language. There are tons of programming languages, but this is the one we want to use. To the naked eye, a python program file looks just like any other text file. However the .py filetype tells the computer that it is a special file that can be executed by the Python interpreter.
+
 Blue = Folder
+
 Green = File
+
 ### The Python Interpreter
 The interpreter is simply language to describe the underlying mechanics of python -- it is the underlying software that reads the .py textfiles and "interprets" the meaning, and then executes them. To a person, "5 + 5" looks like a pair of numbers and a symbol. To the Python interpreter, "5 + 5" is the number '10'.
 
