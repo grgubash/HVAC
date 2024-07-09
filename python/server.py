@@ -4,6 +4,7 @@ import zmq
 import time
 import numpy as np
 import matplotlib.pyplot as plt
+from sensor import add_topic
 
 # preallocate empty array and assign slice
 def update_temps(arr, num=1, fill_value=np.nan):
@@ -23,22 +24,24 @@ def update_temps(arr, num=1, fill_value=np.nan):
 
 def run():
 
-    # Specify a port to communicate over
-    port = "5556"
-
     # Specify how often we want to update our readings
     looptime = 1
 
     # Establish ZMQ subscribing context (magic)
     context = zmq.Context()
-    socket = context.socket(zmq.SUB)
+    subscriber = context.socket(zmq.SUB)
 
-    # Connect to our port 
-    socket.connect ("tcp://localhost:%s" % port)
+    # Bind to our listener port 
+    subscriber.bind("tcp://127.0.0.1:5556")
     
     # We are interested in any message with the topic "temp"
     topic = "temp"
-    socket.subscribe(topic)
+    subscriber.subscribe(topic)
+    
+    # Create a publisher    
+    context = zmq.Context()
+    publisher = context.socket(zmq.PUB)
+    publisher.bind("tcp://127.0.0.1:5557")
 
     # Initialize an empty array to store our temperature readings
     # 60 entries = 1 minute
@@ -56,8 +59,7 @@ def run():
     while True:
 
         # Receive messages over the ZMQ link
-        message = socket.recv_string()
-        #print(f"Received: {message} via ZMQ link")
+        message = subscriber.recv_string()
        
         # Isolate the temperature reading from the entire message
         topic, messagedata = message.split('::')
@@ -72,7 +74,18 @@ def run():
         line.set_ydata(temps)
         figure.canvas.draw()
         figure.canvas.flush_events()
- 
+                
+        # Logic for controlling the fan relay
+        if int(currentTemp) > 25:
+            msg = add_topic('fancontrol','on')
+            publisher.send_string(msg)
+            print(f"sent message: {msg}")
+        else:
+            msg = add_topic('fancontrol','off')
+            publisher.send_string(msg)
+            print(f"sent message: {msg}")
+
+            
         # Loops are ungoverned, so we have to force a sleep every time or else we will run at 100% computing power
         time.sleep(looptime)
 

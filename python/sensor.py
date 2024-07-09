@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from w1thermsensor import W1ThermSensor as w1s
+
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy import random as rnd
@@ -8,7 +8,9 @@ import zmq
 import time
 import sys
 
-def add_topic(topic, message):
+DEBUG = False
+
+def add_topic(topic:str, message:str):
     """
     Simple function to add a topic to a string to be sent over ZMQ
     """
@@ -26,21 +28,23 @@ def run():
     looptime = 1
 
     # Create our sensor object with the 1W driver library
-    sensor1 = w1s()
+    if not DEBUG:
+        from w1thermsensor import W1ThermSensor as w1s
+        sensor1 = w1s()
 
     # Establish a ZMQ publishing socket
-    port = "5556"
-
     context = zmq.Context()
     socket = context.socket(zmq.PUB)
-    socket.bind("tcp://*:%s" % port)
+    socket.connect("tcp://127.0.0.1:5556")
     topic = 'temp'
 
     # Enter forever loop
     while True:
-
         # Get temperature reading
-        temp_data = sensor1.get_temperature()
+        if not DEBUG:
+            temp_data = sensor1.get_temperature()
+        else:
+            temp_data = rnd.randint(20,30)
 
         # Construct a message string to send over ZMQ
         message = add_topic(topic, temp_data)
