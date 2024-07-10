@@ -23,16 +23,16 @@ The rule for using cd (or ANY command) is to type "cd" and then a SPACE and then
 See a print out of your terminal history, everything you have types in recently. 
 
 ## The Text Editor
-The text editor is the place we edit our code, or read documentation, or otherwise interact with text based files. There are many text editors, but the one built in to your Raspberry Pi is called "geany". 
+The text editor is the place we edit our code, or read documentation, or otherwise interact with text based files. There are many text editors, but the one built in to your Raspberry Pi is called "Visual Studio Code". 
 
 ### Starting the text editor
 To open a file in the text editor:
 
-"geany  < filename >"
+"code  < filename >"
 
 OR use the following to open the text editor in the folder you are currently in:
 
-"geany ."
+"code ."
 
 ## GIT
 Git is a tool used to manage and coordinate our code and other associated files. It is a command line tool with a few necessary commands. To ues git, you must cd into a folder that is a git directory. For this program, that means cd into ~/watches. folders are called "repositories" or "repos." 
