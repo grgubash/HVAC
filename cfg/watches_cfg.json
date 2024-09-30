@@ -1,0 +1,10 @@
+{
+    "config":{
+        "set_point":140,
+        "hysteresis":20,
+        "update_rate":1,
+        "log_size": 100,
+        "sub_socket": 5556,
+        "pub_socket": 5557
+    }
+}
