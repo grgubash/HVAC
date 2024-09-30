@@ -8,7 +8,7 @@ import zmq
 import time
 import sys
 
-DEBUG = False
+DEBUG = True
 
 def add_topic(topic:str, message:str):
     """
@@ -44,7 +44,7 @@ def run():
         if not DEBUG:
             temp_data = sensor1.get_temperature()
         else:
-            temp_data = rnd.randint(20,30)
+            temp_data = rnd.randint(50,90)
 
         # Construct a message string to send over ZMQ
         message = add_topic(topic, temp_data)

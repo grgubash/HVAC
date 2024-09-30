@@ -23,10 +23,9 @@ def run():
     # Bind to our listener port 
     subscriber.connect("tcp://127.0.0.1:5557")
     
-    # We are interested in any message with the topic "temp"
+    # We are interested in any message with the topic "fancontrol"
     topic = "fancontrol"
     subscriber.subscribe(topic)   
-    
     colors = bcolors()
 
     # Initialize a plot to view our data
@@ -34,7 +33,7 @@ def run():
         
         # Receive messages over the ZMQ link
         message = subscriber.recv_string()
-       
+
         # Isolate the temperature reading from the entire message
         topic, messagedata = message.split('::')
         
