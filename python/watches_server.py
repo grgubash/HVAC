@@ -55,8 +55,7 @@ class plant_manager:
         with open(config_fname) as f:
             cfg_file = json.load(f)
             
-        self.config = cfg_file.get("config")
-        
+        self.config = cfg_file.get("config") 
         
     def add_topic(self, topic:str, message:str) -> str:
         """
@@ -67,7 +66,15 @@ class plant_manager:
         return msg
     
     def relay_control_fsm(self, temp_reading:float, relay_state:bool) -> str:
+        """This is the logic that controls the fan.
 
+        Args:
+            temp_reading (float): _description_
+            relay_state (bool): _description_
+
+        Returns:
+            str: _description_
+        """
         status = 1
         
         if relay_state == True:
@@ -148,8 +155,7 @@ class plant_manager:
 
             # Receive messages over the ZMQ link
             message = self.subscriber.recv_string()
-            
-        
+
             # Isolate the temperature reading from the entire message
             topic, messagedata = message.split('::')
             
@@ -196,7 +202,6 @@ class plant_manager:
         Returns:
             int: Status
         """
-        
         status = 1
 
         try:
@@ -217,10 +222,12 @@ class plant_manager:
         """
         relay_state = False
         return relay_state
-
+        
 if __name__ == "__main__":
     config_path = os.path.join("cfg","watches_cfg.json")
 
     # Create WATCHES server objectour
     manager = plant_manager(config_path, verbose=True)
     manager.run()
+    
+    manager.set_fan_on()

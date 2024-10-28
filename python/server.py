@@ -6,6 +6,44 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sensor import add_topic
 
+class fanHandler:
+    def __init__(self): 
+        self.relay_state = []
+        pass
+    def handle_logic(self, temp):
+        pass
+    
+def relay_state_logic(currentTemp, on_threshold, off_threshold, current_state_of_relay):
+    # Write our function here
+    # True == on
+    # False == off
+    # Comparators:
+    # Less than <
+    # Greater than >
+    # Equal to ==
+    # Less than or equal to <=
+    # Greater than or equal to >=
+    # logical and &
+    # logical or |
+
+    if current_state_of_relay == True:
+        if currentTemp > 140:
+            command = "on"
+        elif currentTemp <= 140:
+            command = "off"
+            
+    elif current_state_of_relay == False:
+        if currentTemp > 175:
+            command = "on"
+        elif currentTemp <= 175:
+            command ="off"
+            
+    else:
+        # Error state
+        Warning('Somethings not right.')
+    
+    return command
+
 # preallocate empty array and assign slice
 def update_temps(arr, num=1, fill_value=np.nan):
     """
@@ -60,7 +98,7 @@ def run():
 
         # Receive messages over the ZMQ link
         message = subscriber.recv_string()
-       
+        
         # Isolate the temperature reading from the entire message
         topic, messagedata = message.split('::')
         
@@ -76,15 +114,12 @@ def run():
         figure.canvas.flush_events()
                 
         # Logic for controlling the fan relay
-        if int(currentTemp) > 25:
-            msg = add_topic('fancontrol','on')
-            publisher.send_string(msg)
-            print(f"sent message: {msg}")
-        else:
-            msg = add_topic('fancontrol','off')
-            publisher.send_string(msg)
-            print(f"sent message: {msg}")
-
+        on_threshold = 175
+        off_threshold = 140
+        relay_state = 0#TODO ASK RELAY CONTROLLER FOR ITS CURRENT STATE
+        message_to_send_to_relay_controller = relay_state_logic(currentTemp, on_threshold, off_threshold, relay_state)
+        publisher.send_string(message_to_send_to_relay_controller)
+        print(f"sent message: {message_to_send_to_relay_controller}")
             
         # Loops are ungoverned, so we have to force a sleep every time or else we will run at 100% computing power
         time.sleep(looptime)

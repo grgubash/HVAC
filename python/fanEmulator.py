@@ -10,7 +10,8 @@ class bcolors:
     OKRED = '\033[93m'
     OKGREEN = '\033[92m'
     ENDC = '\033[0m'
-    
+class fan_relay_controller:
+
 def run():
 
     # Specify how often we want to update our readings
