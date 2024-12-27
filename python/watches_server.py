@@ -13,9 +13,16 @@ matplotlib.use('TkAgg')
 
 # Set up the logger
 now = datetime.datetime.now()
-logname = os.path.join("logs", "SERVER-" + now.strftime('%Y-%m-%dT%H-%M-%S') + ('-%02d' % (now.microsecond / 10000)) + ".log")
+parent_dir = os.path.split(os.getcwd())[0]
+log_dir = os.path.join(parent_dir, "logs")
+
+# Make a logs directory if it does not exist
+if not os.path.isdir(log_dir):
+    os.mkdir(log_dir)
+
+logname = os.path.join(log_dir, "SERVER-" + now.strftime('%Y-%m-%dT%H-%M-%S') + ('-%02d' % (now.microsecond / 10000)) + ".log")
 logging.basicConfig(filename=logname, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%m/%d/%Y %I:%M:%S%p', level=logging.INFO)
-logger = logging.getLogger('WATCHES')
+logger = logging.getLogger('WATCHES-SERVER')
 
 class plant_manager:
     def __init__(self, config_fname:str, verbose:bool=True):
@@ -40,10 +47,6 @@ class plant_manager:
         self.subscriber = self._ctx.socket(zmq.SUB)
         self.subscriber.bind("tcp://127.0.0.1:" + str(self.config.get("sub_socket")))
         self.subscriber.subscribe("temp") 
-        
-        # Make a logs directory if it does not exist
-        if not os.path.isdir('logs'):
-            os.mkdir("logs")
             
         # Create a log
         logger.info("PLANT_MANAGER: Server initialzed")
@@ -224,10 +227,8 @@ class plant_manager:
         return relay_state
         
 if __name__ == "__main__":
-    config_path = os.path.join("cfg","watches_cfg.json")
+    config_path = os.path.join(parent_dir, "cfg","watches_cfg.json")
 
     # Create WATCHES server objectour
     manager = plant_manager(config_path, verbose=True)
     manager.run()
-    
-    manager.set_fan_on()

@@ -5,16 +5,40 @@ import matplotlib.pyplot as plt
 import numpy as np
 from numpy import random as rnd
 import zmq
-import time
-import sys
+import time, datetime
+import sys, os
+import logging
+import json
 
 DEBUG = True
+
+# Set up the logger
+now = datetime.datetime.now()
+parent_dir = os.path.split(os.getcwd())[0]
+log_dir = os.path.join(parent_dir, "logs")
+
+# Make a logs directory if it does not exist
+if not os.path.isdir(log_dir):
+    os.mkdir(log_dir)
+
+logname = os.path.join(log_dir, "SENSOR-" + now.strftime('%Y-%m-%dT%H-%M-%S') + ('-%02d' % (now.microsecond / 10000)) + ".log")
+logging.basicConfig(filename=logname, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%m/%d/%Y %I:%M:%S%p', level=logging.INFO)
+logger = logging.getLogger('WATCHES-SENSOR')
 
 class temp_sensor_interface:
     """This is the code that interacts directly with the temperature sensor
     """
 
-    def add_topic(topic:str, message:str):
+    def __init__(self, config_fname:str, DEBUG:bool=False):
+
+
+    def load_cfg(self, config_fname:str):
+        with open(config_fname) as f:
+            cfg_file = json.load(f)
+            
+        self.config = cfg_file.get("config") 
+
+    def add_topic(self, topic:str, message:str):
         """
         Simple function to add a topic to a string to be sent over ZMQ
         """
@@ -23,7 +47,7 @@ class temp_sensor_interface:
 
         return msg
 
-    def run():
+    def run(self):
         """
         Main loop of our temperature sensing driver.
         """
@@ -51,7 +75,7 @@ class temp_sensor_interface:
                 temp_data = rnd.randint(50,90)
 
             # Construct a message string to send over ZMQ
-            message = add_topic(topic, temp_data)
+            message = self.add_topic(topic, temp_data)
 
             # Publish temperature data to all listeners
             print(f"Sending: {message} over ZMQ link")
