@@ -11,6 +11,8 @@ import os
 
 matplotlib.use('TkAgg')
 
+#TODO See what happens when multiple zmq messages queue up
+
 # Set up the logger
 now = datetime.datetime.now()
 parent_dir = os.path.split(os.getcwd())[0]
@@ -41,12 +43,18 @@ class plant_manager:
         # Create a ZMQ publisher to talk to other hardware systems
         self._ctx = zmq.Context()
         self.publisher = self._ctx.socket(zmq.PUB)
-        self.publisher.bind("tcp://127.0.0.1:" + str(self.config.get("pub_socket")))
+        self.publisher.bind("tcp://127.0.0.1:" + str(self.config.get("server_pub_socket")))
         
         # Create a ZMQ subscriber to listen to other hardware systems
         self.subscriber = self._ctx.socket(zmq.SUB)
-        self.subscriber.bind("tcp://127.0.0.1:" + str(self.config.get("sub_socket")))
+        self.subscriber.bind("tcp://127.0.0.1:" + str(self.config.get("server_sub_socket")))
         self.subscriber.subscribe("temp") 
+        
+        # Create a dict to contain our topics list
+        self.topics = dict(fancontrol='fancontrol', temp='temp')
+        
+        # Flag to let us know if we are waiting on a request
+        self.waiting_for_fan_state = False
             
         # Create a log
         logger.info("PLANT_MANAGER: Server initialzed")
@@ -90,7 +98,7 @@ class plant_manager:
                 self.set_fan_off()
             else:
                 logger.warning('Unrecognized Inputs. Issuing error.')
-                status = -1
+                status = -100
                 
         elif relay_state == False:
             # Case: The fan is currently on and heating
@@ -106,7 +114,7 @@ class plant_manager:
         else:
             # Error state
             logger.warning('Unrecognized Inputs. Issuing error.')
-            status = -1
+            status = -100
             
         return status
     
@@ -158,6 +166,9 @@ class plant_manager:
 
             # Receive messages over the ZMQ link
             message = self.subscriber.recv_string()
+            
+            # Parse the received message
+            #TODO
 
             # Isolate the temperature reading from the entire message
             topic, messagedata = message.split('::')
@@ -190,12 +201,12 @@ class plant_manager:
         status = 1
         
         try:
-            msg = self.add_topic("fancontrol", "on")
+            msg = self.add_topic(self.topics.get('fancontrol'), "on")
             self.publisher.send_string(msg)
             logger.info("PLANT_MANAGER: Set Fan ON")
         except:
             logger.warning("PLANT_MANAGER: Unable to set fan to on")
-            status = -1
+            status = -100
     
             return status
         
@@ -208,12 +219,12 @@ class plant_manager:
         status = 1
 
         try:
-            msg = self.add_topic("fancontrol", "off")
+            msg = self.add_topic(self.topics.get('fancontrol'), "off")
             self.publisher.send_string(msg)
             logger.info("PLANT_MANAGER: Set Fan OFF")
         except:
             logger.warning("PLANT_MANAGER: Unable to set fan to off")
-            status = -1
+            status = -100
             
         return status
     
@@ -223,8 +234,28 @@ class plant_manager:
         Returns:
             relay state (bool): Current state of the fan control relay
         """
-        relay_state = False
-        return relay_state
+        status = 1
+        topic = self.topics.get('fancontrol')
+        
+        try:
+            msg = self.add_topic(topic, "get_state")
+            self.publisher.send_string(msg)
+            logger.info("PLANT MANAGER: Asked for fan state")
+            self.waiting_for_fan_state = True
+        except:
+            logger.warning("PLANT_MANAGER: Unable to request fan state")
+            status = -100
+            
+        return status
+    
+    def parse_message(self, msg:str):
+        
+        # Split the topic and the message
+        topic, messagedata = msg.split('::')
+        
+        #TODO parse temp readings from the temp sensor and relay state message from the fan controller
+
+        pass
         
 if __name__ == "__main__":
     config_path = os.path.join(parent_dir, "cfg","watches_cfg.json")
