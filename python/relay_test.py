@@ -3,7 +3,8 @@
 import RPi.GPIO as GPIO
 import time
 
-relayPin = 16
+# Update for current test
+relayPin = 10
 
 # SET UP THE GPIO TO BE AN OUTPUT
 GPIO.setmode(GPIO.BCM)
