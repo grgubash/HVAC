@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 
-import matplotlib.pyplot as plt
 import numpy as np
 from numpy import random as rnd
 import zmq
@@ -9,8 +8,6 @@ import time, datetime
 import sys, os
 import logging
 import json
-
-DEBUG = True
 
 # Set up the logger
 now = datetime.datetime.now()
@@ -21,8 +18,6 @@ log_dir = os.path.join(parent_dir, "logs")
 if not os.path.isdir(log_dir):
     os.mkdir(log_dir)
     
-#TODO Make the logger a fixed size
-
 logname = os.path.join(log_dir, "SENSOR-" + now.strftime('%Y-%m-%dT%H-%M-%S') + ('-%02d' % (now.microsecond / 10000)) + ".log")
 logging.basicConfig(filename=logname, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%m/%d/%Y %I:%M:%S%p', level=logging.INFO)
 logger = logging.getLogger('WATCHES-SENSOR')
@@ -31,7 +26,7 @@ class temp_sensor_interface:
     """This is the code that interacts directly with the temperature sensor
     """
 
-    def __init__(self, config_fname:str, DEBUG:bool=False):
+    def __init__(self, config_fname:str, DEBUG:bool=False) -> None:
         """_Construct a watches SENSOR object
 
         Args:
@@ -44,8 +39,10 @@ class temp_sensor_interface:
 
         # Establish a ZMQ publishing socket
         self._ctx = zmq.Context()
-        self.socket = self._ctt.socket(zmq.PUB)
-        self.socket.connect("tcp://127.0.0.1:" + str(self.config.get("server_pub_socket")))
+        self.socket = self._ctx.socket(zmq.PUB)
+        
+        # Publish to the socket that the server is listening on
+        self.socket.connect(str(self.config.get("server_sub_socket")))
         
         # Provision for a debug mode where we provide fake temperature data
         if not DEBUG:
@@ -55,9 +52,9 @@ class temp_sensor_interface:
             self.sensor1 = fake_sensor()
         
         # Add message topic
-        self.topic = dict(temp='temp')
+        self.topics = dict(temp='temp')
 
-    def load_cfg(self, config_fname:str):
+    def load_cfg(self, config_fname:str) -> None:
         """ Read the config JSON in as a struct
 
         Args:
@@ -68,9 +65,15 @@ class temp_sensor_interface:
             
         self.config = cfg_file.get("config") 
 
-    def add_topic(self, topic:str, message:str):
-        """
-        Simple function to add a topic to a string to be sent over ZMQ
+    def add_topic(self, topic:str, message:str) -> str:
+        """Simple function to add a topic to a string to be sent over ZMQ
+
+        Args:
+            topic (str): ZMQ Topic for this message
+            message (str): Message contents
+
+        Returns:
+            str: Packed message
         """
         separator = '::'
         msg = topic + separator + str(message)
@@ -100,7 +103,7 @@ class temp_sensor_interface:
             temp_data = self.c_to_f(self.sensor1.get_temperature())
 
             # Construct a message string to send over ZMQ
-            message = self.add_topic(self.topic.get('temp'), temp_data)
+            message = self.add_topic(self.topics.get('temp'), temp_data)
 
             # Publish temperature data to all listeners
             print(f"Sending: {message} over ZMQ link")
@@ -110,7 +113,7 @@ class temp_sensor_interface:
             logger.info("SENSOR READING: %s", str(temp_data))
 
             # Loops are ungoverned, so we have to force a sleep every time or else we will run at 100% computing power
-            time.sleep(self.config.update_rate)
+            time.sleep(self.config.get("update_rate"))
             
 class fake_sensor():
     
@@ -120,7 +123,15 @@ class fake_sensor():
         return rnd.randint(10,40)
 
 if __name__ == "__main__":
+    
+    # Debug mode
+    DEBUG = True
 
-    cfg = os.path.join(parent_dir, "watches_cfg.json")
+    # Specify configuration file
+    cfg = os.path.join(parent_dir, "cfg", "watches_cfg.json")
+    
+    # Create a digital sensor object to mirror our physical one
     sensor = temp_sensor_interface(cfg, DEBUG)
-
+    
+    # Run the sensor
+    sensor.run()

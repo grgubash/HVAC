@@ -5,7 +5,7 @@
         "relay_pin":16,
         "update_rate":1,
         "log_size": 100,
-        "server_sub_socket": 5556,
-        "server_pub_socket": 5557
+        "server_sub_socket": "tcp://127.0.0.1:5556",
+        "server_pub_socket": "tcp://127.0.0.1:5557"
     }
 }

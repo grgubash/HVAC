@@ -4,7 +4,7 @@ import RPi.GPIO as GPIO
 import time
 
 # Update for current test
-relayPin = 10
+relayPin = 16
 
 # SET UP THE GPIO TO BE AN OUTPUT
 GPIO.setmode(GPIO.BCM)
@@ -17,6 +17,7 @@ GPIO.output(relayPin, GPIO.LOW)
 # TURN RELAY ON
 time.sleep(1)
 print('Turning on Relay for 5 seconds...')
+
 GPIO.output(relayPin, GPIO.HIGH)
 
 # WAIT FIVE SECONDS

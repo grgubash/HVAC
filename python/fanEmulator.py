@@ -10,7 +10,6 @@ class bcolors:
     OKRED = '\033[93m'
     OKGREEN = '\033[92m'
     ENDC = '\033[0m'
-class fan_relay_controller:
 
 def run():
 
@@ -24,7 +23,7 @@ def run():
     # Bind to our listener port 
     subscriber.connect("tcp://127.0.0.1:5557")
     
-    # We are interested in any message with the topic "fancontrol"
+    # We are interested in any message with  the topic "fancontrol"
     topic = "fancontrol"
     subscriber.subscribe(topic)   
     colors = bcolors()
@@ -46,6 +45,8 @@ def run():
             color = colors.OKRED
             
         print(f'FAN STATE: {color}{fanstate}{colors.ENDC}')
+        
+        time.sleep(looptime)
 
 
 if __name__ == "__main__":

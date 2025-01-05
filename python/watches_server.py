@@ -12,6 +12,7 @@ import os
 matplotlib.use('TkAgg')
 
 #TODO See what happens when multiple zmq messages queue up
+#TODO Fix the size of the logfiles so that they dont grow forever
 
 # Set up the logger
 now = datetime.datetime.now()
@@ -22,16 +23,18 @@ log_dir = os.path.join(parent_dir, "logs")
 if not os.path.isdir(log_dir):
     os.mkdir(log_dir)
 
+# Set up the logger
 logname = os.path.join(log_dir, "SERVER-" + now.strftime('%Y-%m-%dT%H-%M-%S') + ('-%02d' % (now.microsecond / 10000)) + ".log")
 logging.basicConfig(filename=logname, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%m/%d/%Y %I:%M:%S%p', level=logging.INFO)
 logger = logging.getLogger('WATCHES-SERVER')
 
 class plant_manager:
-    def __init__(self, config_fname:str, verbose:bool=True):
+    def __init__(self, config_fname:str, verbose:bool=True) -> None:
         """Construct a WATCHES server object
 
         Args:
             config_fname (str): Path to configuration file
+            verbose (bool): Runtime option to generate verbose output
         """
         # Load the configuration file
         self.load_cfg(config_fname)
@@ -43,48 +46,68 @@ class plant_manager:
         # Create a ZMQ publisher to talk to other hardware systems
         self._ctx = zmq.Context()
         self.publisher = self._ctx.socket(zmq.PUB)
-        self.publisher.bind("tcp://127.0.0.1:" + str(self.config.get("server_pub_socket")))
+        self.publisher.bind(str(self.config.get("server_pub_socket")))
         
         # Create a ZMQ subscriber to listen to other hardware systems
         self.subscriber = self._ctx.socket(zmq.SUB)
-        self.subscriber.bind("tcp://127.0.0.1:" + str(self.config.get("server_sub_socket")))
+        self.subscriber.bind(str(self.config.get("server_sub_socket")))
         self.subscriber.subscribe("temp") 
         
         # Create a dict to contain our topics list
-        self.topics = dict(fancontrol='fancontrol', temp='temp')
+        self.topics = dict(fancontrol='fancontrol', fanstate='fanstate', temp='temp')
         
         # Flag to let us know if we are waiting on a request
         self.waiting_for_fan_state = False
+        self.commanded_fan_state = False
+        self.reported_fan_state = False
             
         # Create a log
         logger.info("PLANT_MANAGER: Server initialzed")
 
-    def __str__(self):
+    def __str__(self) -> str:
+        """ __str__ method
+
+        Returns:
+            str: String representation of the class config
+        """
         return json.loads(self.config, indent=4)
         
-    def load_cfg(self, config_fname:str):
+    def load_cfg(self, config_fname:str) -> None:
+        """Load the WATCHES configuration JSON file
+
+        Args:
+            config_fname (str): JSON file specifying the operating parameters of this instance of the server
+        """
         with open(config_fname) as f:
             cfg_file = json.load(f)
             
         self.config = cfg_file.get("config") 
         
     def add_topic(self, topic:str, message:str) -> str:
-        """
-        Simple function to add a topic to a string to be sent over ZMQ
+        """Simple function to add a topic to a string to be sent over ZMQ
+
+        Args:
+            topic (str): ZMQ Topic for this message
+            message (str): Message contents
+
+        Returns:
+            str: Packed message
         """
         separator = '::'
         msg = topic + separator + str(message)
+        
         return msg
     
     def relay_control_fsm(self, temp_reading:float, relay_state:bool) -> str:
-        """This is the logic that controls the fan.
+        """This is the logic that controls the fan. It is a simple threshold with 
+        hysteresis state control implementation. 
 
         Args:
-            temp_reading (float): _description_
-            relay_state (bool): _description_
+            temp_reading (float): Temperature reading sent from the temperature sensor driver process
+            relay_state (bool): Current state of the fan relay, as inferred from the relay driver process
 
         Returns:
-            str: _description_
+            int: Status
         """
         status = 1
         
@@ -118,7 +141,7 @@ class plant_manager:
             
         return status
     
-    def update_temp_log(self, value:float=np.nan):
+    def update_temp_log(self, value:float=np.nan) -> None:
         """
         Update the temperature vector by shifting the numpy array and filling in the lost value
         """
@@ -126,10 +149,8 @@ class plant_manager:
         result[:1] = value
         result[1:] = self.temp_log[:-1]
         self.temp_log = result
-        
-        return 1
-        
-    def celsius_to_fahrenheit(self, input_temp_c:float):
+                
+    def celsius_to_fahrenheit(self, input_temp_c:float) -> float:
         """ A function to take a temperature in celsius, and convert it to 
         fahrenheit.
 
@@ -143,7 +164,7 @@ class plant_manager:
         
         return output_temp_f
 
-    def run(self):
+    def run(self) -> None:
         """ Run the control loop
         """
         
@@ -228,11 +249,11 @@ class plant_manager:
             
         return status
     
-    def get_fan_state(self):
+    def get_fan_state(self) -> int:
         """Request get the status of the fan relay
 
         Returns:
-            relay state (bool): Current state of the fan control relay
+            int: Status
         """
         status = 1
         topic = self.topics.get('fancontrol')
@@ -248,15 +269,32 @@ class plant_manager:
             
         return status
     
-    def parse_message(self, msg:str):
+    def parse_message(self, msg:str) -> int:
+        """Parse messages received over the ZMQ server subscriber port
+
+        Args:
+            msg (str): Message received over the ZMQ interface
+
+        Returns:
+            int: Status
+        """
+        
+        status = 1
         
         # Split the topic and the message
         topic, messagedata = msg.split('::')
         
         #TODO parse temp readings from the temp sensor and relay state message from the fan controller
-
-        pass
-        
+        if topic == self.topics.get('fanstate'):
+            pass
+        elif topic == self.topics.get('temp'):
+            pass
+        else:
+            logger.warning("PLANT_MANAGER: Received unrecognized message over ZMQ")
+            status = -100
+            
+        return status
+   
 if __name__ == "__main__":
     config_path = os.path.join(parent_dir, "cfg","watches_cfg.json")
 
