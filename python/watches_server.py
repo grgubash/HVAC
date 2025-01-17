@@ -10,6 +10,7 @@ import json
 import logging
 import logging.handlers
 import os
+import signal
 
 # TODO: Add proper state setting
 
@@ -50,6 +51,9 @@ class plant_manager:
             config_fname (str): Path to configuration file
             verbose (bool): Runtime option to generate verbose output
         """
+        # Handle exits
+        signal.signal(signal.SIGINT, self.exit())
+
         # Load the configuration file
         self.load_cfg(config_fname)
         self.request_state_intvl = round(self.config.get("fan_update_rate") / self.config.get("server_update_rate"))
@@ -347,17 +351,26 @@ class plant_manager:
             # Execute our fan control state machine
             self.relay_control_fsm(temp_reading_f, fan_state)
             
-
-            
         else:
             logger.warning("Received unrecognized message over ZMQ")
             status = -100
             
         return status
+    
+    def exit(self):
+
+        # Gracefully shut down ZMQ pub and sub ports
+        logger.info("Caught interrupt, shutting down")   
+        self._ctx.term()
    
 if __name__ == "__main__":
     config_path = os.path.join(parent_dir, "cfg","watches_cfg.json")
 
     # Create WATCHES server objectour
     manager = plant_manager(config_path, verbose=False)
-    manager.run()
+
+    # Run it, capturing interrupts
+    try:
+        manager.run()
+    except KeyboardInterrupt:
+        manager.exit()
