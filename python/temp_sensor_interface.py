@@ -7,7 +7,10 @@ import zmq
 import time, datetime
 import sys, os
 import logging
+import logging.handlers
 import json
+
+#DONE
 
 # Set up the logger
 now = datetime.datetime.now()
@@ -19,19 +22,30 @@ if not os.path.isdir(log_dir):
     os.mkdir(log_dir)
     
 logname = os.path.join(log_dir, "SENSOR-" + now.strftime('%Y-%m-%dT%H-%M-%S') + ('-%02d' % (now.microsecond / 10000)) + ".log")
-logging.basicConfig(filename=logname, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%m/%d/%Y %I:%M:%S%p', level=logging.INFO)
+
+rfh = logging.handlers.RotatingFileHandler(filename=logname, 
+    mode='a',
+    maxBytes=5*1024*1024,
+    backupCount=2,
+    encoding=None,
+    delay=0,
+)
+
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%m/%d/%Y %I:%M:%S%p', 
+                    level=logging.INFO,
+                    handlers=[rfh])
+
 logger = logging.getLogger('WATCHES-SENSOR')
 
 class temp_sensor_interface:
     """This is the code that interacts directly with the temperature sensor
     """
 
-    def __init__(self, config_fname:str, DEBUG:bool=False) -> None:
+    def __init__(self, config_fname:str) -> None:
         """_Construct a watches SENSOR object
 
         Args:
             config_fname (str): Path to config file
-            DEBUG (bool, optional): Set the object to DEBUG mode. Defaults to False.
         """
         
         # Load config file
@@ -39,17 +53,18 @@ class temp_sensor_interface:
 
         # Establish a ZMQ publishing socket
         self._ctx = zmq.Context()
-        self.socket = self._ctx.socket(zmq.PUB)
+        self.publisher = self._ctx.socket(zmq.PUB)
         
         # Publish to the socket that the server is listening on
-        self.socket.connect(str(self.config.get("server_sub_socket")))
+        self.publisher.connect(str(self.config.get("server_sub_socket")))
         
         # Provision for a debug mode where we provide fake temperature data
-        if not DEBUG:
+        if not self.config.get("sensor_debug"):
             from w1thermsensor import W1ThermSensor as w1s
             self.sensor1 = w1s()
         else:
-            self.sensor1 = fake_sensor()
+            self.sensor1 = fake_sensor(self.config.get("enable_temp_override"),
+                                       self.config.get("override_temp_c"))
         
         # Add message topic
         self.topics = dict(temp='temp')
@@ -96,42 +111,44 @@ class temp_sensor_interface:
         """
         Main loop of our temperature sensing driver.
         """
+        
+        logger.info("Entering run loop")
 
         # Enter forever loop
         while True:
-            # Get temperature reading
+            # Get temperature reading and convert to F
             temp_data = self.c_to_f(self.sensor1.get_temperature())
 
             # Construct a message string to send over ZMQ
             message = self.add_topic(self.topics.get('temp'), temp_data)
 
             # Publish temperature data to all listeners
-            print(f"Sending: {message} over ZMQ link")
-            self.socket.send_string(message)
+            self.publisher.send_string(message)
             
             # Log the temperature reading
-            logger.info("SENSOR READING: %s", str(temp_data))
+            logger.info(f"Sensor Reading: {temp_data}")
 
             # Loops are ungoverned, so we have to force a sleep every time or else we will run at 100% computing power
-            time.sleep(self.config.get("update_rate"))
+            time.sleep(self.config.get("temp_update_rate"))
             
 class fake_sensor():
-    
-    def __init__(self):
-        pass
+
+    def __init__(self, override, override_temp):
+        self.override = override
+        self.override_temp = override_temp
     def get_temperature(self) -> float:
-        return rnd.randint(10,40)
+        if self.override:
+            return self.override_temp
+        else:
+            return rnd.randint(0,100)
 
 if __name__ == "__main__":
-    
-    # Debug mode
-    DEBUG = True
 
     # Specify configuration file
     cfg = os.path.join(parent_dir, "cfg", "watches_cfg.json")
     
     # Create a digital sensor object to mirror our physical one
-    sensor = temp_sensor_interface(cfg, DEBUG)
+    sensor = temp_sensor_interface(cfg)
     
     # Run the sensor
     sensor.run()

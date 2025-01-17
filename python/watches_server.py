@@ -3,16 +3,17 @@
 import zmq
 import time, datetime
 import numpy as np
+import math
 import matplotlib
 import matplotlib.pyplot as plt
 import json
 import logging
+import logging.handlers
 import os
 
-matplotlib.use('TkAgg')
+# TODO: Add proper state setting
 
-#TODO See what happens when multiple zmq messages queue up
-#TODO Fix the size of the logfiles so that they dont grow forever
+matplotlib.use('TkAgg')
 
 # Set up the logger
 now = datetime.datetime.now()
@@ -24,9 +25,22 @@ if not os.path.isdir(log_dir):
     os.mkdir(log_dir)
 
 # Set up the logger
-logname = os.path.join(log_dir, "SERVER-" + now.strftime('%Y-%m-%dT%H-%M-%S') + ('-%02d' % (now.microsecond / 10000)) + ".log")
-logging.basicConfig(filename=logname, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%m/%d/%Y %I:%M:%S%p', level=logging.INFO)
-logger = logging.getLogger('WATCHES-SERVER')
+logname = os.path.join(log_dir, "PLANTMANAGER-" + now.strftime('%Y-%m-%dT%H-%M-%S') + ('-%02d' % (now.microsecond / 10000)) + ".log")
+
+rfh = logging.handlers.RotatingFileHandler(filename=logname, 
+    mode='a',
+    maxBytes=5*1024*1024,
+    backupCount=2,
+    encoding=None,
+    delay=0,
+)
+
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', 
+                    datefmt='%m/%d/%Y %I:%M:%S%p', 
+                    level=logging.INFO,
+                    handlers=[rfh])
+
+logger = logging.getLogger('WATCHES-PLANT-MANAGER')
 
 class plant_manager:
     def __init__(self, config_fname:str, verbose:bool=True) -> None:
@@ -38,7 +52,15 @@ class plant_manager:
         """
         # Load the configuration file
         self.load_cfg(config_fname)
+        self.request_state_intvl = round(self.config.get("fan_update_rate") / self.config.get("server_update_rate"))
+        self.loop_ctr = 0
         self._verbose = verbose
+        
+        # Create a dict to contain our topics list and states
+        self.topics = dict(fancontrol='fancontrol', fanstate='fanstate', temp='temp')
+        self.requests = dict(getstate="getstate", turnon="turnon", turnoff = "turnoff")
+        self.states = dict(on="on", off="off", error="error", warning="warning")
+        self.state = self.states.get("off")
         
         # Allocate temperature log
         self.temp_log = np.zeros(self.config.get("log_size"))
@@ -51,18 +73,17 @@ class plant_manager:
         # Create a ZMQ subscriber to listen to other hardware systems
         self.subscriber = self._ctx.socket(zmq.SUB)
         self.subscriber.bind(str(self.config.get("server_sub_socket")))
-        self.subscriber.subscribe("temp") 
-        
-        # Create a dict to contain our topics list
-        self.topics = dict(fancontrol='fancontrol', fanstate='fanstate', temp='temp')
+        self.subscriber.subscribe(self.topics.get("temp")) 
+        self.subscriber.subscribe(self.topics.get("fanstate"))
+
         
         # Flag to let us know if we are waiting on a request
         self.waiting_for_fan_state = False
-        self.commanded_fan_state = False
-        self.reported_fan_state = False
+        self.commanded_fan_state = self.states.get("off")
+        self.reported_fan_state =  self.states.get("off")
             
         # Create a log
-        logger.info("PLANT_MANAGER: Server initialzed")
+        logger.info("Server initialzed")
 
     def __str__(self) -> str:
         """ __str__ method
@@ -111,26 +132,28 @@ class plant_manager:
         """
         status = 1
         
-        if relay_state == True:
+        if relay_state == self.states.get("on"):
             # Case: The fan is currently on
             if temp_reading > (self.config.get("set_point") - self.config.get("hysteresis")):
-                # Case: temp > 140, stay on 
-                self.set_fan_on()
+                # Case: temp > set point, stay on 
+                #self.set_fan_on()
+                pass
             elif temp_reading <= (self.config.get("set_point") - self.config.get("hysteresis")):
-                # Case: temp < 140, turn off
+                # Case: temp < set point, turn off
                 self.set_fan_off()
             else:
                 logger.warning('Unrecognized Inputs. Issuing error.')
                 status = -100
                 
-        elif relay_state == False:
+        elif relay_state == self.states.get("off"):
             # Case: The fan is currently on and heating
             if temp_reading > (self.config.get("set_point") + self.config.get("hysteresis")):
-                # Case: temp > 180, turn on
+                # Case: temp > set point, turn on
                 self.set_fan_on()
             elif temp_reading <= (self.config.get("set_point") + self.config.get("hysteresis")):
-                # Case: temp < 180, turn off
-                self.set_fan_off()
+                # Case: temp < set point,stay off
+                #self.set_fan_off()
+                pass
             else:
                 logger.warning('Unrecognized Inputs. Issuing error.')
                 status = -1
@@ -138,6 +161,7 @@ class plant_manager:
             # Error state
             logger.warning('Unrecognized Inputs. Issuing error.')
             status = -100
+            self.state = self.states.get("error")
             
         return status
     
@@ -149,6 +173,9 @@ class plant_manager:
         result[:1] = value
         result[1:] = self.temp_log[:-1]
         self.temp_log = result
+        
+        # Log it
+        logger.info(f"Got temperature reading {value} degF")
                 
     def celsius_to_fahrenheit(self, input_temp_c:float) -> float:
         """ A function to take a temperature in celsius, and convert it to 
@@ -168,11 +195,13 @@ class plant_manager:
         """ Run the control loop
         """
         
-        logger.info("PLANT_MANAGER: Entering run loop")
+        logger.info("Entering run loop")
 
         # Initialize a plot to view our data
         if self._verbose:
-            time_axis = np.arange(0,self.config.get("log_size"))*self.config.get("update_rate")
+            
+            #TODO: Properly scale the time axis
+            time_axis = np.arange(0,self.config.get("log_size"))*self.config.get("server_update_rate")
             
             plt.ion() 
             figure, ax = plt.subplots()
@@ -180,38 +209,40 @@ class plant_manager:
             plt.title('Running Temperature Reading')
             plt.ylabel('Temperature (F)')
             plt.xlabel('time')
-            plt.ylim([100,200])
+            plt.ylim([0,200])
             plt.grid()
 
         while True:
 
             # Receive messages over the ZMQ link
-            message = self.subscriber.recv_string()
+            try:
+                message = self.subscriber.recv_string(flags=zmq.NOBLOCK)
+                
+                # Parse the received message
+                self.parse_message(message)
             
-            # Parse the received message
-            #TODO
-
-            # Isolate the temperature reading from the entire message
-            topic, messagedata = message.split('::')
-            
-            # Convert the temperature reading from a string to an integer
-            temp_reading_f = self.celsius_to_fahrenheit(float(messagedata))
-
-            # Add our current temperature to our running array of temperatures
-            self.update_temp_log(temp_reading_f)
+            except zmq.Again as e:
+                # If no message rx'd, do nothing
+                pass                
             
             # Update our plot (magic)
             if self._verbose:
                 line.set_ydata(self.temp_log)
                 figure.canvas.draw()
                 figure.canvas.flush_events()
-                        
-            # Logic for controlling the fan relay
-            fan_state = self.get_fan_state()
-            self.relay_control_fsm(temp_reading_f, fan_state)
-                
+            
+            
+            # Every so often, ask the fan what state it is in so we can maintain an up to date state
+            self.loop_ctr+=1
+            if not self.loop_ctr % self.request_state_intvl:
+                # Request the fan state every self.config.fan_update_rate seconds
+                # This somewhat math abstracted conditional does that
+                self.get_fan_state()
+                self.loop_ctr = 0
+
             # Loops are ungoverned, so we have to force a sleep every time or else we will run at 100% computing power
-            time.sleep(self.config.get("update_rate"))
+            # Run the main loop ~4 times faster than the hardware drivers (these are not strictly timed loops)
+            time.sleep(self.config.get("server_update_rate"))
             
     def set_fan_on(self) -> int:
         """ Request set fan control relay on
@@ -222,11 +253,12 @@ class plant_manager:
         status = 1
         
         try:
-            msg = self.add_topic(self.topics.get('fancontrol'), "on")
+            msg = self.add_topic(self.topics.get('fancontrol'), self.requests.get("turnon"))
             self.publisher.send_string(msg)
-            logger.info("PLANT_MANAGER: Set Fan ON")
+            logger.info("Set Fan ON")
+            self.commanded_fan_state = self.states.get("on")
         except:
-            logger.warning("PLANT_MANAGER: Unable to set fan to on")
+            logger.warning("Unable to set fan to on")
             status = -100
     
             return status
@@ -240,11 +272,12 @@ class plant_manager:
         status = 1
 
         try:
-            msg = self.add_topic(self.topics.get('fancontrol'), "off")
+            msg = self.add_topic(self.topics.get('fancontrol'), self.requests.get("turnoff"))
             self.publisher.send_string(msg)
-            logger.info("PLANT_MANAGER: Set Fan OFF")
+            logger.info("Set Fan OFF")
+            self.commanded_fan_state = self.states.get("off")
         except:
-            logger.warning("PLANT_MANAGER: Unable to set fan to off")
+            logger.warning("Unable to set fan to off")
             status = -100
             
         return status
@@ -259,12 +292,12 @@ class plant_manager:
         topic = self.topics.get('fancontrol')
         
         try:
-            msg = self.add_topic(topic, "get_state")
+            msg = self.add_topic(topic, self.requests.get("getstate"))
             self.publisher.send_string(msg)
-            logger.info("PLANT MANAGER: Asked for fan state")
+            logger.info("Asked for fan state")
             self.waiting_for_fan_state = True
         except:
-            logger.warning("PLANT_MANAGER: Unable to request fan state")
+            logger.warning("Unable to request fan state")
             status = -100
             
         return status
@@ -284,13 +317,40 @@ class plant_manager:
         # Split the topic and the message
         topic, messagedata = msg.split('::')
         
-        #TODO parse temp readings from the temp sensor and relay state message from the fan controller
         if topic == self.topics.get('fanstate'):
-            pass
+            # Update our received fan state
+            
+            # Rx'd fan state data
+            fan_state = messagedata
+            self.reported_fan_state = fan_state
+            self.waiting_for_fan_state = False
+            
+            if self.commanded_fan_state != self.reported_fan_state:
+                self.state = self.states.get("warning")
+                logger.warning("Fan reported state inconsistent with commanded state")
+            elif self.commanded_fan_state == self.reported_fan_state:
+                self.state = self.states.get("on")
+            
+            logger.info(f"Got fan state {fan_state} from FANCONTROL")                               
+            
         elif topic == self.topics.get('temp'):
-            pass
+            # Update our temperature log
+            # Rx'd sensor data
+            temp_reading_f = float(messagedata)
+            
+            # Logic for controlling the fan relay
+            fan_state = self.reported_fan_state
+            
+            # Update temp log
+            self.update_temp_log(temp_reading_f)
+            
+            # Execute our fan control state machine
+            self.relay_control_fsm(temp_reading_f, fan_state)
+            
+
+            
         else:
-            logger.warning("PLANT_MANAGER: Received unrecognized message over ZMQ")
+            logger.warning("Received unrecognized message over ZMQ")
             status = -100
             
         return status
@@ -299,5 +359,5 @@ if __name__ == "__main__":
     config_path = os.path.join(parent_dir, "cfg","watches_cfg.json")
 
     # Create WATCHES server objectour
-    manager = plant_manager(config_path, verbose=True)
+    manager = plant_manager(config_path, verbose=False)
     manager.run()
