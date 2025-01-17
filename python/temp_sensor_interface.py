@@ -26,7 +26,7 @@ logname = os.path.join(log_dir, "SENSOR-" + now.strftime('%Y-%m-%dT%H-%M-%S') + 
 rfh = logging.handlers.RotatingFileHandler(filename=logname, 
     mode='a',
     maxBytes=5*1024*1024,
-    backupCount=2,
+    backupCount=1,
     encoding=None,
     delay=0,
 )
@@ -131,6 +131,15 @@ class temp_sensor_interface:
             # Loops are ungoverned, so we have to force a sleep every time or else we will run at 100% computing power
             time.sleep(self.config.get("temp_update_rate"))
             
+    def exit(self):
+        """Gracefully shutdown zmq ports and exit the program
+        """
+        logger.info("Gracefully exiting")
+        self.publisher.close()
+        self._ctx.term()
+        print("shutdown")
+        sys.exit(0)
+            
 class fake_sensor():
 
     def __init__(self, override, override_temp):
@@ -141,6 +150,7 @@ class fake_sensor():
             return self.override_temp
         else:
             return rnd.randint(0,100)
+        
 
 if __name__ == "__main__":
 
@@ -151,4 +161,8 @@ if __name__ == "__main__":
     sensor = temp_sensor_interface(cfg)
     
     # Run the sensor
-    sensor.run()
+    try:
+        sensor.run()
+    except KeyboardInterrupt:
+        logger.info("Got shutdown signal")
+        sensor.exit()

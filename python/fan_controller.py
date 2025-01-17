@@ -25,7 +25,7 @@ logname = os.path.join(log_dir, "FANCONTROL-" + now.strftime('%Y-%m-%dT%H-%M-%S'
 rfh = logging.handlers.RotatingFileHandler(filename=logname, 
     mode='a',
     maxBytes=5*1024*1024,
-    backupCount=2,
+    backupCount=1,
     encoding=None,
     delay=0,
 )
@@ -131,7 +131,7 @@ class fan_controller:
             
             except zmq.Again as e:
                 # If no message rx'd, do nothing
-                logger.info("No requests from plant manager")
+                pass            
             
             time.sleep(self.config.get("server_update_rate"))
             
@@ -302,6 +302,16 @@ class fan_controller:
 
         return
     
+    def exit(self):
+        """Gracefully shutdown zmq ports and exit the program
+        """
+        logger.info("Gracefully exiting")
+        self.publisher.close()
+        self.subscriber.close()
+        self._ctx.term()
+        print("shutdown")
+        sys.exit(0)
+    
 if __name__ == "__main__":
 
     # Specify configuration file
@@ -310,5 +320,9 @@ if __name__ == "__main__":
     # Create a digital sensor object to mirror our physical one
     fan = fan_controller(cfg)
     
-    # Run the sensor
-    fan.run()
+    # Handle exits
+    try:
+        fan.run()
+    except KeyboardInterrupt:
+        logger.info("Got shutdown signal")
+        fan.exit()

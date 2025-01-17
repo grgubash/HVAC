@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import json
 import logging
 import logging.handlers
-import os
+import os, sys
 import signal
 
 # TODO: Add proper state setting
@@ -31,7 +31,7 @@ logname = os.path.join(log_dir, "PLANTMANAGER-" + now.strftime('%Y-%m-%dT%H-%M-%
 rfh = logging.handlers.RotatingFileHandler(filename=logname, 
     mode='a',
     maxBytes=5*1024*1024,
-    backupCount=2,
+    backupCount=1,
     encoding=None,
     delay=0,
 )
@@ -51,9 +51,6 @@ class plant_manager:
             config_fname (str): Path to configuration file
             verbose (bool): Runtime option to generate verbose output
         """
-        # Handle exits
-        signal.signal(signal.SIGINT, self.exit())
-
         # Load the configuration file
         self.load_cfg(config_fname)
         self.request_state_intvl = round(self.config.get("fan_update_rate") / self.config.get("server_update_rate"))
@@ -80,7 +77,6 @@ class plant_manager:
         self.subscriber.subscribe(self.topics.get("temp")) 
         self.subscriber.subscribe(self.topics.get("fanstate"))
 
-        
         # Flag to let us know if we are waiting on a request
         self.waiting_for_fan_state = False
         self.commanded_fan_state = self.states.get("off")
@@ -358,19 +354,24 @@ class plant_manager:
         return status
     
     def exit(self):
-
-        # Gracefully shut down ZMQ pub and sub ports
-        logger.info("Caught interrupt, shutting down")   
+        """Gracefully shutdown zmq ports and exit the program
+        """
+        logger.info("Gracefully exiting")
+        self.publisher.close()
+        self.subscriber.close()
         self._ctx.term()
-   
+        print("shutdown")
+        sys.exit(0)
+
 if __name__ == "__main__":
     config_path = os.path.join(parent_dir, "cfg","watches_cfg.json")
 
     # Create WATCHES server objectour
     manager = plant_manager(config_path, verbose=False)
 
-    # Run it, capturing interrupts
+    # Handle exits
     try:
         manager.run()
     except KeyboardInterrupt:
+        logger.info("Got shutdown signal")
         manager.exit()
