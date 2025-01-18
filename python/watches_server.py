@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 
 import zmq
-import time, datetime
+import time
+from datetime import datetime as dt
 import numpy as np
 import math
 import matplotlib
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 import json
 import logging
 import logging.handlers
@@ -17,7 +19,7 @@ import signal
 matplotlib.use('TkAgg')
 
 # Set up the logger
-now = datetime.datetime.now()
+now = dt.now()
 parent_dir = os.path.split(os.getcwd())[0]
 log_dir = os.path.join(parent_dir, "logs")
 
@@ -63,8 +65,20 @@ class plant_manager:
         self.states = dict(on="on", off="off", error="error", warning="warning")
         self.state = self.states.get("off")
         
+        # Determine log size, which is always in a resolution of 1 second
+        log_size_hours = self.config.get("log_size_hours")
+         
+        # array_size = 1/temp_update_rate (s) (seconds/sample) * 60 (seconds/minute) * 60 (minutes/hour)
+        log_array_size = round(log_size_hours * (1/self.config.get("temp_update_rate")) * 60 * 60) # when temp_update_rate == 1, this is implicitly "seconds"
+        
         # Allocate temperature log
-        self.temp_log = np.zeros(self.config.get("log_size"))
+        self.temp_log = np.empty(log_array_size)
+        self.temp_log[:] = np.nan
+        
+        # Our time axis will be on the 24hr clock seconds index
+        self.time_axis = np.arange(log_array_size)
+        self.xlim_min = 0
+        self.xlim_max = log_array_size # we can do this since it is equal to the time in seconds we are logging
         
         # Create a ZMQ publisher to talk to other hardware systems
         self._ctx = zmq.Context()
@@ -165,15 +179,25 @@ class plant_manager:
             
         return status
     
-    def update_temp_log(self, value:float=np.nan) -> None:
+    def update_temp_log(self, value:float, timestamp:str) -> None:
+        """ Maintain a time aligned vector of temperature readings from the temperature sensor
+
+        Args:
+            value (float): Input temperature reading
+            timestamp (str): Input timestamp, from temp sensor
         """
-        Update the temperature vector by shifting the numpy array and filling in the lost value
-        """
-        result = np.empty_like(self.temp_log)
-        result[:1] = value
-        result[1:] = self.temp_log[:-1]
-        self.temp_log = result
         
+        # convert the timestamp string to its seconds-in-the-day index
+        h,m,s = list(map(int,timestamp.split(':')))
+        seconds_idx = h*60*60 + m*60 + s
+        
+        # Update the temp log for the given temperature index
+        self.temp_log[seconds_idx] = value
+        
+        # Update our plot (magic)
+        if self._verbose:
+            self.plot_update(value, seconds_idx)
+
         # Log it
         logger.info(f"Got temperature reading {value} degF")
                 
@@ -199,21 +223,9 @@ class plant_manager:
 
         # Initialize a plot to view our data
         if self._verbose:
-            
-            #TODO: Properly scale the time axis
-            time_axis = np.arange(0,self.config.get("log_size"))*self.config.get("server_update_rate")
-            
-            plt.ion() 
-            figure, ax = plt.subplots()
-            line, = ax.plot(time_axis, self.temp_log)
-            plt.title('Running Temperature Reading')
-            plt.ylabel('Temperature (F)')
-            plt.xlabel('time')
-            plt.ylim([0,200])
-            plt.grid()
+            self.plot_setup()
 
         while True:
-
             # Receive messages over the ZMQ link
             try:
                 message = self.subscriber.recv_string(flags=zmq.NOBLOCK)
@@ -225,13 +237,6 @@ class plant_manager:
                 # If no message rx'd, do nothing
                 pass                
             
-            # Update our plot (magic)
-            if self._verbose:
-                line.set_ydata(self.temp_log)
-                figure.canvas.draw()
-                figure.canvas.flush_events()
-            
-            
             # Every so often, ask the fan what state it is in so we can maintain an up to date state
             self.loop_ctr+=1
             if not self.loop_ctr % self.request_state_intvl:
@@ -241,8 +246,57 @@ class plant_manager:
                 self.loop_ctr = 0
 
             # Loops are ungoverned, so we have to force a sleep every time or else we will run at 100% computing power
-            # Run the main loop ~4 times faster than the hardware drivers (these are not strictly timed loops)
+            # Run the main loop faster than the hardware drivers (these are not strictly timed loops)
             time.sleep(self.config.get("server_update_rate"))
+            
+    def plot_setup(self) -> None:
+        """ Initialie a matplotlib window to plot the temperature log
+        """       
+        # Set interactive on and create axes objects
+        plt.ion() 
+        self.figure, self.ax = plt.subplots()
+        self.line, = self.ax.plot(self.time_axis, self.temp_log, 'b')
+        self.stem = self.ax.stem(0,0,'r')
+        self.ax.set_xlim(left=0, right=len(self.time_axis))
+        self.ax.set_ylim(bottom=100, top=125)
+        
+        # Tick at every hour
+        tick_idx = np.arange(0,60*60*24,60*60, dtype=int)
+        self.ax.set_xticks(list(tick_idx))
+        
+        tick_labels =  [str(label) for label in range(24)]    
+            
+        for idx in np.arange(24):
+            tick_labels[idx] =  tick_labels[idx] +'00'
+            if idx < 10:
+                tick_labels[idx] = '0' + tick_labels[idx] 
+                    
+        self.ax.set_xticklabels(tick_labels)
+        self.ax.xaxis.set_tick_params(rotation=75)
+
+
+        plt.title('Return Temperature Reading')
+        plt.ylabel('Temperature (F)')
+        plt.xlabel('Time')
+        plt.grid()
+            
+    def plot_update(self, current_temp_reading:float, current_time_idx:int) -> None:
+        """Update the temperature log plot with the current reading
+
+        Args:
+            current_temp_reading (float): Most recent reported temperature reading
+            current_time_idx (int): Time index corresponding
+        """
+
+        # Update the trace with new data        
+        self.line.set_ydata(self.temp_log)
+        
+        # Highlight the current reading
+        self.stem[0].set_ydata([current_temp_reading])
+        self.stem[0].set_xdata([current_time_idx])
+        
+        self.figure.canvas.draw()
+        self.figure.canvas.flush_events()
             
     def set_fan_on(self) -> int:
         """ Request set fan control relay on
@@ -315,7 +369,7 @@ class plant_manager:
         status = 1
         
         # Split the topic and the message
-        topic, messagedata = msg.split('::')
+        topic, messagedata, timestamp = msg.split('::')
         
         if topic == self.topics.get('fanstate'):
             # Update our received fan state
@@ -328,6 +382,15 @@ class plant_manager:
             if self.commanded_fan_state != self.reported_fan_state:
                 self.state = self.states.get("warning")
                 logger.warning("Fan reported state inconsistent with commanded state")
+                
+                # If this occurs, request again
+                if self.commanded_fan_state == self.states.get("on"):
+                    self.set_fan_off
+                elif self.commanded_fan_state == self.states.get("off"):
+                    self.set_fan_off
+                else:
+                    logger.warning('Unknown fan state')
+
             elif self.commanded_fan_state == self.reported_fan_state:
                 self.state = self.states.get("on")
             
@@ -342,7 +405,7 @@ class plant_manager:
             fan_state = self.reported_fan_state
             
             # Update temp log
-            self.update_temp_log(temp_reading_f)
+            self.update_temp_log(temp_reading_f, timestamp)
             
             # Execute our fan control state machine
             self.relay_control_fsm(temp_reading_f, fan_state)
@@ -360,14 +423,15 @@ class plant_manager:
         self.publisher.close()
         self.subscriber.close()
         self._ctx.term()
-        print("shutdown")
+        plt.close('all')
+        print("\nshutdown")
         sys.exit(0)
 
 if __name__ == "__main__":
     config_path = os.path.join(parent_dir, "cfg","watches_cfg.json")
 
     # Create WATCHES server objectour
-    manager = plant_manager(config_path, verbose=False)
+    manager = plant_manager(config_path, verbose=True)
 
     # Handle exits
     try:
