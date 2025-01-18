@@ -3,15 +3,15 @@
         "set_point":140,
         "hysteresis":20,
         "relay_pin":16,
-        "temp_update_rate":3,
-        "fan_update_rate": 3,
-        "server_update_rate": 1,
-        "log_size": 100,
+        "temp_update_rate":1,
+        "fan_update_rate": 10,
+        "server_update_rate": 0.1,
+        "log_size_hours": 24,
         "server_sub_socket": "tcp://127.0.0.1:5556",
         "server_pub_socket": "tcp://127.0.0.1:5557",
         "fan_debug": true,
         "sensor_debug": true,
-        "enable_temp_override": false,
-        "override_temp_c": 50
+        "enable_temp_override": true,
+        "override_temp_c": 45
     }
 }
