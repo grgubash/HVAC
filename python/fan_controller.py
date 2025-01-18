@@ -3,7 +3,8 @@
 import numpy as np
 from numpy import random as rnd
 import zmq
-import time, datetime
+import time
+from datetime import datetime as dt
 import sys, os
 import logging
 import logging.handlers
@@ -12,7 +13,7 @@ import json
 # TODO: Add proper state setting
 
 # Set up the logger
-now = datetime.datetime.now()
+now = dt.now()
 parent_dir = os.path.split(os.getcwd())[0]
 log_dir = os.path.join(parent_dir, "logs")
 
@@ -109,7 +110,7 @@ class fan_controller:
         Simple function to add a topic to a string to be sent over ZMQ
         """
         separator = '::'
-        msg = topic + separator + str(message)
+        msg = topic + separator + str(message) + "::" + dt.now().strftime("%H:%M:%S")
 
         return msg
 
@@ -309,7 +310,7 @@ class fan_controller:
         self.publisher.close()
         self.subscriber.close()
         self._ctx.term()
-        print("shutdown")
+        print("\nshutdown")
         sys.exit(0)
     
 if __name__ == "__main__":
