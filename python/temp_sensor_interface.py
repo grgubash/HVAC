@@ -126,6 +126,7 @@ class temp_sensor_interface:
                 self.last_reading = temp_data
             except Exception as e:
                 temp_data = self.last_reading
+                logger.warning('Sensor error {e}, reporting last sensor reading')
 
             # Construct a message string to send over ZMQ
             message = self.add_topic(self.topics.get('temp'), temp_data)
