@@ -146,9 +146,10 @@ class plant_manager:
         """
         status = 1
         
+        # If the fan is on, it needs to drop below set point - hysteresis to turn off
         if relay_state == self.states.get("on"):
             # Case: The fan is currently on
-            if temp_reading > (self.config.get("set_point") - self.config.get("hysteresis")):
+            if temp_reading > (self.config.get("set_point") - self.config.get("hysteresis")): #TODO: VERIFY THE SETPOINT LEVELS WITH SENIOR
                 # Case: temp > set point, stay on 
                 #self.set_fan_on()
                 pass
@@ -159,12 +160,13 @@ class plant_manager:
                 logger.warning('Unrecognized Inputs. Issuing error.')
                 status = -100
                 
+        # If the fan is off, temp needs to reach set point to turn on
         elif relay_state == self.states.get("off"):
             # Case: The fan is currently on and heating
-            if temp_reading > (self.config.get("set_point") + self.config.get("hysteresis")):
+            if temp_reading > (self.config.get("set_point")):
                 # Case: temp > set point, turn on
                 self.set_fan_on()
-            elif temp_reading <= (self.config.get("set_point") + self.config.get("hysteresis")):
+            elif temp_reading <= (self.config.get("set_point")):
                 # Case: temp < set point,stay off
                 #self.set_fan_off()
                 pass
@@ -255,10 +257,26 @@ class plant_manager:
         # Set interactive on and create axes objects
         plt.ion() 
         self.figure, self.ax = plt.subplots()
-        self.line, = self.ax.plot(self.time_axis, self.temp_log, 'b')
-        self.stem = self.ax.stem(0,0,'r')
+        self.figure.set_figheight(6)
+        self.figure.set_figwidth(10)
+        
+        # Plot the last 24 hours of readings
+        self.line, = self.ax.plot(self.time_axis, self.temp_log, 'b', label="Historic readings")
+        
+        # Plot the current reading
+        self.stem = self.ax.stem([0],[0],'r',  markerfmt ='D', label="Current reading")
+        
+        # Plot the set points
+        setpoint_line = self.config.get("set_point") * np.ones(60*60*24)
+        hysteresis_line = (self.config.get("set_point") - self.config.get("hysteresis")) * np.ones(60*60*24)
+        
+        # Don't expect to update these in realtime
+        self.ax.plot(self.time_axis, setpoint_line, '#008000', label="Upper setpoint")        
+        self.ax.plot(self.time_axis, hysteresis_line, 'k', label="Lower setpoint")
+
+        # Set ax limits
         self.ax.set_xlim(left=0, right=len(self.time_axis))
-        self.ax.set_ylim(bottom=100, top=125)
+        self.ax.set_ylim(bottom=50, top=150) #TODO: Make sure this is reasonable
         
         # Tick at every hour
         tick_idx = np.arange(0,60*60*24,60*60, dtype=int)
@@ -274,12 +292,21 @@ class plant_manager:
         self.ax.set_xticklabels(tick_labels)
         self.ax.xaxis.set_tick_params(rotation=75)
 
-
-        plt.title('Return Temperature Reading')
+        # Format the plot
+        plt.title('Return Temperature')
         plt.ylabel('Temperature (F)')
-        plt.xlabel('Time')
+        plt.xlabel('Time of Day (Hrs)')
         plt.grid()
             
+        # Legend at bottom - make some space
+        box = self.ax.get_position()
+        self.ax.set_position([box.x0, box.y0 + box.height * 0.1,
+                        box.width, box.height * 0.9])
+
+        # Put a legend below current axis
+        self.ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),
+                fancybox=True, shadow=True, ncol=5)
+        
     def plot_update(self, current_temp_reading:float, current_time_idx:int) -> None:
         """Update the temperature log plot with the current reading
 

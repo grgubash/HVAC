@@ -142,16 +142,23 @@ class temp_sensor_interface:
         sys.exit(0)
             
 class fake_sensor():
+    """Lets use this to plot a sin wave to demonstrate the plot function of the server. 
+        Over 24 hours (86400), want a couple periods with amplitude of 20, centered at 55d c
+    """
 
     def __init__(self, override, override_temp):
         self.override = override
         self.override_temp = override_temp
+        self.ctr = 0
+        self.f = 2.3/(60*60*24) # Want it to be discontinuous a bit
+        
     def get_temperature(self) -> float:
         if self.override:
             return self.override_temp
         else:
-            return rnd.randint(40,50)
-        
+            value = 30*np.sin(2 * np.pi * self.f * self.ctr) + 40
+            self.ctr += 1
+            return value        
 
 if __name__ == "__main__":
 

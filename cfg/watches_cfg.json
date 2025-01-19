@@ -11,7 +11,7 @@
         "server_pub_socket": "tcp://127.0.0.1:5557",
         "fan_debug": true,
         "sensor_debug": true,
-        "enable_temp_override": true,
+        "enable_temp_override": false,
         "override_temp_c": 45
     }
 }
