@@ -1,7 +1,7 @@
 {
     "config":{
-        "set_point":140,
-        "hysteresis":20,
+        "set_point":135,
+        "hysteresis":35,
         "relay_pin":16,
         "temp_update_rate":1,
         "fan_update_rate": 10,
@@ -10,8 +10,8 @@
         "server_sub_socket": "tcp://127.0.0.1:5556",
         "server_pub_socket": "tcp://127.0.0.1:5557",
         "fan_debug": true,
-        "sensor_debug": true,
+        "sensor_debug": false,
         "enable_temp_override": false,
-        "override_temp_c": 45
+        "override_temp_c": 40
     }
 }
