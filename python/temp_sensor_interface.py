@@ -51,6 +51,9 @@ class temp_sensor_interface:
         
         # Load config file
         self.load_cfg(config_fname)
+        
+        # Contingency for unable to read sensor
+        self.last_reading = 0
 
         # Establish a ZMQ publishing socket
         self._ctx = zmq.Context()
@@ -118,7 +121,11 @@ class temp_sensor_interface:
         # Enter forever loop
         while True:
             # Get temperature reading and convert to F
-            temp_data = self.c_to_f(self.sensor1.get_temperature())
+            try: 
+                temp_data = self.c_to_f(self.sensor1.get_temperature())
+                self.last_reading = temp_data
+            except Exception as e:
+                temp_data = self.last_reading
 
             # Construct a message string to send over ZMQ
             message = self.add_topic(self.topics.get('temp'), temp_data)
