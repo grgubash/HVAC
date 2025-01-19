@@ -271,8 +271,8 @@ class plant_manager:
         hysteresis_line = (self.config.get("set_point") - self.config.get("hysteresis")) * np.ones(60*60*24)
         
         # Don't expect to update these in realtime
-        self.ax.plot(self.time_axis, setpoint_line, '#008000', label="Upper setpoint")        
-        self.ax.plot(self.time_axis, hysteresis_line, 'k', label="Lower setpoint")
+        self.ax.plot(self.time_axis, setpoint_line, '#008000', label="Upper range")        
+        self.ax.plot(self.time_axis, hysteresis_line, 'k', label="Lower range")
 
         # Set ax limits
         self.ax.set_xlim(left=0, right=len(self.time_axis))
