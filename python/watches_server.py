@@ -276,7 +276,7 @@ class plant_manager:
 
         # Set ax limits
         self.ax.set_xlim(left=0, right=len(self.time_axis))
-        self.ax.set_ylim(bottom=50, top=150) #TODO: Make sure this is reasonable
+        self.ax.set_ylim(bottom=80, top=160) #TODO: Add these to config file
         
         # Tick at every hour
         tick_idx = np.arange(0,60*60*24,60*60, dtype=int)
