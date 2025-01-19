@@ -69,8 +69,8 @@ class plant_manager:
         log_size_hours = self.config.get("log_size_hours")
          
         # array_size = 1/temp_update_rate (s) (seconds/sample) * 60 (seconds/minute) * 60 (minutes/hour)
-        log_array_size = round(log_size_hours * (1/self.config.get("temp_update_rate")) * 60 * 60) # when temp_update_rate == 1, this is implicitly "seconds"
-        
+        #log_array_size = round(log_size_hours * (1/self.config.get("temp_update_rate")) * 60 * 60) # when temp_update_rate == 1, this is implicitly "seconds"
+        log_array_size = 60 * 60 * 24 # TODO FIX THIS SCALING
         # Allocate temperature log
         self.temp_log = np.empty(log_array_size)
         self.temp_log[:] = np.nan
@@ -279,7 +279,7 @@ class plant_manager:
         self.ax.set_ylim(bottom=80, top=160) #TODO: Add these to config file
         
         # Tick at every hour
-        tick_idx = np.arange(0,60*60*24,60*60, dtype=int)
+        tick_idx = np.arange(0,60*60*24, 60*60 , dtype=int)
         self.ax.set_xticks(list(tick_idx))
         
         tick_labels =  [str(label) for label in range(24)]    
