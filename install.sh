@@ -1,6 +1,6 @@
-sudo cp /services/server.service /etc/systemd/system
-sudo cp /services/sensor.service /etc/systemd/system
-sudo cp /services/controller.service /etc/systemd/system
+sudo cp services/server.service /etc/systemd/system
+sudo cp services/sensor.service /etc/systemd/system
+sudo cp services/controller.service /etc/systemd/system
 
 sudo systemctl -daemon-reload
 
