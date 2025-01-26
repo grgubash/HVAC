@@ -65,12 +65,9 @@ class plant_manager:
         self.states = dict(on="on", off="off", error="error", warning="warning")
         self.state = self.states.get("off")
         
-        # Determine log size, which is always in a resolution of 1 second
-        log_size_hours = self.config.get("log_size_hours")
-         
-        # array_size = 1/temp_update_rate (s) (seconds/sample) * 60 (seconds/minute) * 60 (minutes/hour)
-        #log_array_size = round(log_size_hours * (1/self.config.get("temp_update_rate")) * 60 * 60) # when temp_update_rate == 1, this is implicitly "seconds"
-        log_array_size = 60 * 60 * 24 # TODO FIX THIS SCALING
+        # Determine log size
+        log_array_size = 60 * 60 * 24 # We always want our plot to be at 1 second resolution
+        
         # Allocate temperature log
         self.temp_log = np.empty(log_array_size)
         self.temp_log[:] = np.nan
@@ -191,7 +188,7 @@ class plant_manager:
         
         # convert the timestamp string to its seconds-in-the-day index
         h,m,s = list(map(int,timestamp.split(':')))
-        seconds_idx = h*60*60 + m*60 + s
+        seconds_idx = round(h*60*60 + m*60 + s)
         
         # Update the temp log for the given temperature index
         self.temp_log[seconds_idx] = value
