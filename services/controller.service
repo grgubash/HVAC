@@ -1,0 +1,11 @@
+[Unit]
+Description=WATCHES Fan Controller
+
+[Service]
+ExecStart=
+WorkingDirectory=
+Restart=always
+User=
+
+[Install]
+WantedBy=multi-user.target

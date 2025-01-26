@@ -1,0 +1,11 @@
+[Unit]
+Description=WATCHES Server
+
+[Service]
+ExecStart=
+WorkingDirectory=
+Restart=always
+User=
+
+[Install]
+WantedBy=multi-user.target
