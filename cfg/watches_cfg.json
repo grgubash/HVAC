@@ -6,7 +6,6 @@
         "temp_update_rate":1,
         "fan_update_rate": 10,
         "server_update_rate": 0.1,
-        "log_size_hours": 24,
         "server_sub_socket": "tcp://127.0.0.1:5556",
         "server_pub_socket": "tcp://127.0.0.1:5557",
         "fan_debug": true,
