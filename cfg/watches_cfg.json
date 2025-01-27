@@ -9,7 +9,7 @@
         "server_sub_socket": "tcp://127.0.0.1:5556",
         "server_pub_socket": "tcp://127.0.0.1:5557",
         "fan_debug": true,
-        "sensor_debug": false,
+        "sensor_debug": true,
         "enable_temp_override": false,
         "override_temp_c": 40
     }
