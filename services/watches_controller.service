@@ -1,0 +1,14 @@
+[Unit]
+Description=WATCHES Fan Controller
+
+[Service]
+Type=exec
+ExecStart=/usr/bin/python3 -u /home/USER/HVAC/python/fan_controller.py
+WorkingDirectory=/home/USER/HVAC/python
+Restart=always
+User=
+KillSignal=SIGINT
+TimeoutSec=15
+
+[Install]
+WantedBy=multi-user.target

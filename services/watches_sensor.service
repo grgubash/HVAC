@@ -1,0 +1,14 @@
+[Unit]
+Description=WATCHES Sensor Driver
+
+[Service]
+Type=exec
+ExecStart=/usr/bin/python3 -u /home/USER/HVAC/python/temp_sensor_interface.py
+WorkingDirectory=/home/USER/HVAC/python
+Restart=always
+User=
+KillSignal=SIGINT
+TimeoutSec=15
+
+[Install]
+WantedBy=multi-user.target
