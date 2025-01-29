@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-
 import numpy as np
 from numpy import random as rnd
 import zmq
@@ -67,6 +66,7 @@ class temp_sensor_interface:
             from w1thermsensor import W1ThermSensor as w1s
             self.sensor1 = w1s()
         else:
+            logger.info("Sensor started in Debug mode")
             self.sensor1 = fake_sensor(self.config.get("enable_temp_override"),
                                        self.config.get("override_temp_c"))
         
