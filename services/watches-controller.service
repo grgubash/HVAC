@@ -3,10 +3,10 @@ Description=WATCHES Fan Controller
 
 [Service]
 Type=exec
-ExecStart=/usr/bin/python3 -u /home/USER/HVAC/python/fan_controller.py
-WorkingDirectory=/home/USER/HVAC/python
+ExecStart=/usr/bin/python3 -u /home/USERNAME/watches/python/fan_controller.py
+WorkingDirectory=/home/USERNAME/watches/python
 Restart=always
-User=
+User=USERNAME
 KillSignal=SIGINT
 TimeoutSec=15
 

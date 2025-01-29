@@ -3,10 +3,10 @@ Description=WATCHES Sensor Driver
 
 [Service]
 Type=exec
-ExecStart=/usr/bin/python3 -u /home/USER/HVAC/python/temp_sensor_interface.py
-WorkingDirectory=/home/USER/HVAC/python
+ExecStart=/usr/bin/python3 -u /home/USERNAME/watches/python/temp_sensor_interface.py
+WorkingDirectory=/home/USERNAME/watches/python
 Restart=always
-User=
+User=USERNAME
 KillSignal=SIGINT
 TimeoutSec=15
 

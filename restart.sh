@@ -1,3 +1,3 @@
-sudo systemctl restart watches_controller
-sudo systemctl restart watches_sensor
-sudo systemctl restart watches_server
+sudo systemctl restart watches-controller
+sudo systemctl restart watches-sensor
+sudo systemctl restart watches-server
