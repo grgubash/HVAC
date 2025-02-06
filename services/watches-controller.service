@@ -9,7 +9,7 @@ Restart=always
 User=senior
 KillSignal=SIGINT
 TimeoutSec=15
-EnvironmentFile=/home/senior/.pyenv/base/lib/python3.11/sire-packages
+EnvironmentFile=/home/senior/.pyenv/base/lib/python3.11/site-packages
 
 [Install]
 WantedBy=multi-user.target

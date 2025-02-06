@@ -12,7 +12,7 @@ User=senior
 KillSignal=SIGINT
 Environment="DISPLAY=:0"
 TimeoutSec=15
-EnvironmentFile=/home/senior/.pyenv/base/lib/python3.11/sire-packages
+EnvironmentFile=/home/senior/.pyenv/base/lib/python3.11/site-packages
 
 [Install]
 WantedBy=graphical.target
