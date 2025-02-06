@@ -2,10 +2,12 @@
 Description=WATCHES Server
 
 [Service]
-ExecStart=
-WorkingDirectory=
+ExecStart=/home/senior/HVAC/python/watches_server.py
+WorkingDirectory=/home/senior/HVAC/python
 Restart=always
-User=
+User=senior
+EnvironmentFile=/home/senior/.pyenv/base/lib/python3.11/sire-packages
+
 
 [Install]
 WantedBy=multi-user.target

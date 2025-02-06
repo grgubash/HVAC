@@ -2,10 +2,11 @@
 Description=WATCHES Sensor Driver
 
 [Service]
-ExecStart=
-WorkingDirectory=
+ExecStart=/home/senior/HVAC/python/temp_sensor_interface.py
+WorkingDirectory=/home/senior/HVAC/python
 Restart=always
-User=
+User=senior
+EnvironmentFile=/home/senior/.pyenv/base/lib/python3.11/sire-packages
 
 [Install]
 WantedBy=multi-user.target
