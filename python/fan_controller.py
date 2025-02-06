@@ -91,6 +91,7 @@ class fan_controller:
             self.set_OFF()
         else:
             # If in debug mode, don't invoke the actual relays. Handle in ON/OFF calls
+            logger.info("Started fan controller in Debug mode:")
             self.set_OFF()
         
 
