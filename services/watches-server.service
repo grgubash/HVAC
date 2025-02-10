@@ -5,14 +5,13 @@ After=graphical-session.target
 
 [Service]
 Type=exec
-ExecStart=/usr/bin/python3 -u /home/senior/watches/python/watches_server.py
-WorkingDirectory=/home/senior/watches/python
+ExecStart=/home/ger/.pyenv/base/bin/python -m /home/ger/watches/python/watches_server
+WorkingDirectory=/home/ger/watches/python
 Restart=always
-User=senior
+User=ger
 KillSignal=SIGINT
 Environment="DISPLAY=:0"
 TimeoutSec=15
-EnvironmentFile=/home/senior/.pyenv/base/lib/python3.11/site-packages
 
 [Install]
 WantedBy=graphical.target

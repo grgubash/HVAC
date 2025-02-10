@@ -3,13 +3,12 @@ Description=WATCHES Sensor Driver
 
 [Service]
 Type=exec
-ExecStart=/usr/bin/python3 -u /home/senior/watches/python/temp_sensor_interface.py
-WorkingDirectory=/home/senior/watches/python
+ExecStart=/home/ger/.pyenv/base/bin/python -m /home/ger/watches/python/temp_sensor_interface
+WorkingDirectory=/home/ger/watches/python
 Restart=always
-User=senior
+User=ger
 KillSignal=SIGINT
 TimeoutSec=15
-EnvironmentFile=/home/senior/.pyenv/base/lib/python3.11/site-packages
 
 [Install]
 WantedBy=multi-user.target

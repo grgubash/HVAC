@@ -3,13 +3,12 @@ Description=WATCHES Fan Controller
 
 [Service]
 Type=exec
-ExecStart=/usr/bin/python3 -u /home/senior/watches/python/fan_controller.py
-WorkingDirectory=/home/senior/watches/python
+ExecStart=ExecStart=/home/ger/.pyenv/base/bin/python -m /home/ger/watches/python/fan_controller
+WorkingDirectory=/home/ger/watches/python
 Restart=always
-User=senior
+User=ger
 KillSignal=SIGINT
 TimeoutSec=15
-EnvironmentFile=/home/senior/.pyenv/base/lib/python3.11/site-packages
 
 [Install]
 WantedBy=multi-user.target
