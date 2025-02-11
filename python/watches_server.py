@@ -6,6 +6,7 @@ from datetime import datetime as dt
 import numpy as np
 import math
 import matplotlib
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import json
@@ -15,8 +16,6 @@ import os, sys
 import signal
 
 # TODO: Add proper state setting
-
-matplotlib.use('TkAgg')
 
 # Set up the logger
 now = dt.now()
