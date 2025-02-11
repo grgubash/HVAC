@@ -3,10 +3,10 @@ Description=WATCHES Fan Controller
 
 [Service]
 Type=exec
-ExecStart=ExecStart=/home/ger/.pyenv/base/bin/python -m /home/ger/watches/python/fan_controller
-WorkingDirectory=/home/ger/watches/python
+ExecStart=/home/senior/.pyenv/base/bin/python /home/senior/watches/python/fan_controller.py
+WorkingDirectory=/home/senior/watches/python
 Restart=always
-User=ger
+User=senior
 KillSignal=SIGINT
 TimeoutSec=15
 

@@ -5,10 +5,10 @@ After=graphical-session.target
 
 [Service]
 Type=exec
-ExecStart=/home/ger/.pyenv/base/bin/python -m /home/ger/watches/python/watches_server
-WorkingDirectory=/home/ger/watches/python
+ExecStart=/home/senior/.pyenv/base/bin/python /home/senior/watches/python/watches_server.py
+WorkingDirectory=/home/senior/watches/python
 Restart=always
-User=ger
+User=senior
 KillSignal=SIGINT
 Environment="DISPLAY=:0"
 TimeoutSec=15
