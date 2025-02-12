@@ -11,6 +11,8 @@
         "fan_debug": true,
         "sensor_debug": true,
         "enable_temp_override": false,
-        "override_temp_c": 40
+        "override_temp_c": 40,
+        "graph_upper_extent": 200,
+        "graph_lower_extent": 50
     }
 }

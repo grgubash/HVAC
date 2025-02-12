@@ -194,10 +194,10 @@ class plant_manager:
         
         # Update our plot (magic)
         if self._verbose:
-            self.plot_update(value, seconds_idx)
+            self.plot_update(seconds_idx, value)
 
         # Log it
-        logger.info(f"Got temperature reading {value} degF")
+        logger.info(f"Got reading {value} degF at time {seconds_idx} seconds")
                 
     def celsius_to_fahrenheit(self, input_temp_c:float) -> float:
         """ A function to take a temperature in celsius, and convert it to 
@@ -272,7 +272,7 @@ class plant_manager:
 
         # Set ax limits
         self.ax.set_xlim(left=0, right=len(self.time_axis))
-        self.ax.set_ylim(bottom=80, top=160) #TODO: Add these to config file
+        self.ax.set_ylim(bottom=self.config.get("graph_lower_extent"), top=self.config.get("graph_upper_extent")) #TODO: Add these to config file
         
         # Tick at every hour
         tick_idx = np.arange(0,60*60*24, 60*60 , dtype=int)
@@ -303,7 +303,7 @@ class plant_manager:
         self.ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),
                 fancybox=True, shadow=True, ncol=5)
         
-    def plot_update(self, current_temp_reading:float, current_time_idx:int) -> None:
+    def plot_update(self, current_time_idx:int, current_temp_reading:float) -> None:
         """Update the temperature log plot with the current reading
 
         Args:
