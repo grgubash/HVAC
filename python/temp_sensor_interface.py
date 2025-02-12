@@ -158,7 +158,7 @@ class fake_sensor():
         self.override = override
         self.override_temp = override_temp
         self.ctr = 0
-        self.f = 2.3/(60*60*24) # Want it to be discontinuous a bit
+        self.f = 25/(60*60*24) # Want it to be discontinuous a bit
         
     def get_temperature(self) -> float:
         if self.override:
