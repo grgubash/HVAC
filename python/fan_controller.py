@@ -298,7 +298,7 @@ class fan_controller:
     def send_GPIO_state(self) -> None:
         """Send relay state to server
         """
-        msg = self.add_topic(self.topics.get('fanstate'), self.state)
+        msg = self.add_topic(self.topics.get('fanstate'), self.get_GPIO_state())
         self.publisher.send_string(msg)
         logger.info(f"Sent state {self.state} to plant manager")
 
