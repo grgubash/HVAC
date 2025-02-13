@@ -292,7 +292,7 @@ class plant_manager:
         plt.title('Return Temperature')
         plt.ylabel('Temperature (F)')
         plt.xlabel('Time of Day (Hrs)')
-        plt.grid()
+        self.ax.grid(visible=True, axis='x')
             
         # Legend at bottom - make some space
         box = self.ax.get_position()
